@@ -1,5 +1,6 @@
 import os
 import pymysql
+from pymysql import err
 from cgi import parse_qs, escape
 class Registration:
     def register(self, environ):
@@ -22,15 +23,24 @@ class Registration:
         try:
                 conn = pymysql.connect(host=host, port=3306, user=user, passwd=passwd, db=db)
         except Exception as e:
-                s = str(e)
-                response_body += s
+            s = str(e)
+            response_body += s
         cur = conn.cursor()
         try:
                 cur.execute("INSERT INTO pgusers(Login,Password,Mail) VALUES (%s,%s,%s)", (login, password, email))
-        except Exception as e:
-                s = str(e)
-                response_body += s
-
+        except pymysql.DataError as e:
+            #Ошибки MySQL всегда четырехразрядные, помни об этом!!!
+            s = str(e.args[0])
+            response_body +=  "-" + s[1] + s[2] + s[3] + s[4]
+        except pymysql.IntegrityError as e:
+            s = str(e.args[0])
+            response_body +=  "-" + s[1] + s[2] + s[3] + s[4]
+        except pymysql.ProgrammingError as e:
+            s = str(e.args[0])
+            response_body +=  "-" + s[1] + s[2] + s[3] + s[4]
+        except pymysql.NotSupportedError as e:
+            s = str(e.args[0])
+            response_body +=  "-" + s[1] + s[2] + s[3] + s[4]
         conn.commit()
         cur.close()
         conn.close()

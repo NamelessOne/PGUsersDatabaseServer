@@ -20,20 +20,29 @@ class Login:
         try:
                 conn = pymysql.connect(host=host, port=3306, user=user, passwd=passwd, db=db)
         except Exception as e:
-                s = str(e)
-                response_body += s
+            response_body = str(-1)
         cur = conn.cursor()
-
-        cur.execute("SELECT id FROM pgusers where login=%s and password=%s", (login, password))
-
-        id = cur.fetchone()
-
+        try:
+            cur.execute("SELECT id FROM pgusers where login=%s and password=%s", (login, password))
+            id = cur.fetchone()
+            response_body = str(id[0])
+        except pymysql.DataError as e:
+            #Ошибки MySQL всегда четырехразрядные, помни об этом!!!
+            s = str(e.args[0])
+            response_body +=  "-" + s[1] + s[2] + s[3] + s[4]
+        except pymysql.IntegrityError as e:
+            s = str(e.args[0])
+            response_body +=  "-" + s[1] + s[2] + s[3] + s[4]
+        except pymysql.ProgrammingError as e:
+            s = str(e.args[0])
+            response_body +=  "-" + s[1] + s[2] + s[3] + s[4]
+        except pymysql.NotSupportedError as e:
+            s = str(e.args[0])
+            response_body +=  "-" + s[1] + s[2] + s[3] + s[4]
+        except Exception as e:
+            response_body = str(-1)
         conn.commit()
         cur.close()
         conn.close()
 
-        try:
-            response_body = str(id[0])
-        except Exception as e:
-            response_body = str(-1)
         return response_body
